@@ -38,39 +38,60 @@
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.05);
         }
+
+        /* Toggle Switch Styling */
+        .switch-checkbox:checked + .switch-label {
+            background-color: #3b82f6;
+        }
+        .switch-checkbox:checked + .switch-label .switch-dot {
+            transform: translateX(100%);
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 text-white">
 
-    <div class="glass-panel w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[500px]">
+    <div class="glass-panel w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[550px]">
         
         <!-- Left: Upload & Info -->
-        <div class="w-full md:w-1/2 p-8 border-b md:border-b-0 md:border-r border-slate-700 flex flex-col justify-center">
-            <div class="mb-8">
-                <h1 class="text-3xl font-bold tracking-tight mb-2">Image<span class="gradient-text">Lite</span></h1>
-                <p class="text-slate-400 text-sm">Auto-compress to 150KB & Upload</p>
-            </div>
-
-            <div id="drop-zone" class="border-2 border-dashed border-slate-600 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-500 hover:bg-slate-800/50 transition-all group relative overflow-hidden">
-                <input type="file" id="image-input" class="hidden" accept="image/*">
-                
-                <div id="upload-content" class="relative z-10">
-                    <div class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-400 group-hover:scale-110 transition-transform">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+        <div class="w-full md:w-1/2 p-8 border-b md:border-b-0 md:border-r border-slate-700 flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight mb-1">Image<span class="gradient-text">Lite</span></h1>
+                        <p class="text-slate-400 text-xs">Auto-compress to 150KB</p>
                     </div>
-                    <h3 class="font-semibold text-lg">Upload Image</h3>
-                    <p class="text-xs text-slate-500 mt-2">Drag & Drop or CTRL+V</p>
+                    
+                    <!-- Server Switcher -->
+                    <div class="flex flex-col items-end">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase mb-1">Server</span>
+                        <div class="flex items-center space-x-2 bg-slate-800 p-1 rounded-lg border border-slate-700">
+                            <button id="btn-imagekit" onclick="setServer('imagekit')" class="px-2 py-1 text-[10px] rounded transition-all font-bold bg-blue-600 text-white">ImageKit</button>
+                            <button id="btn-imgbb" onclick="setServer('imgbb')" class="px-2 py-1 text-[10px] rounded transition-all font-bold text-slate-400 hover:text-white">ImgBB</button>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Processing Overlay -->
-                <div id="processing-overlay" class="absolute inset-0 bg-slate-900/90 z-20 flex flex-col items-center justify-center hidden">
-                    <span class="loader mb-4"></span>
-                    <p id="process-text" class="text-xs font-bold text-blue-400 uppercase tracking-widest">Compressing...</p>
+                <div id="drop-zone" class="border-2 border-dashed border-slate-600 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-500 hover:bg-slate-800/50 transition-all group relative overflow-hidden h-64 flex flex-col items-center justify-center">
+                    <input type="file" id="image-input" class="hidden" accept="image/*">
+                    
+                    <div id="upload-content" class="relative z-10">
+                        <div class="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-blue-400 group-hover:scale-110 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                        </div>
+                        <h3 class="font-semibold text-lg">Upload Image</h3>
+                        <p class="text-xs text-slate-500 mt-2">Drag & Drop or CTRL+V</p>
+                    </div>
+
+                    <!-- Processing Overlay -->
+                    <div id="processing-overlay" class="absolute inset-0 bg-slate-900/90 z-20 flex flex-col items-center justify-center hidden">
+                        <span class="loader mb-4"></span>
+                        <p id="process-text" class="text-xs font-bold text-blue-400 uppercase tracking-widest text-center px-4">Compressing...</p>
+                    </div>
                 </div>
             </div>
 
             <!-- Stats -->
-            <div id="stats-container" class="mt-8 grid grid-cols-2 gap-4 opacity-30 transition-opacity duration-500">
+            <div id="stats-container" class="mt-6 grid grid-cols-2 gap-4 opacity-30 transition-opacity duration-500">
                 <div class="stat-card p-4 rounded-xl">
                     <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Original</p>
                     <p id="size-original" class="text-xl font-mono mt-1">0 MB</p>
@@ -84,7 +105,7 @@
 
         <!-- Right: Result & Preview -->
         <div class="w-full md:w-1/2 p-8 bg-slate-900/50 flex flex-col">
-            <div class="flex-1 flex flex-col items-center justify-center relative">
+            <div class="flex-1 flex flex-col items-center justify-center relative min-h-[300px]">
                 <div id="empty-state" class="text-center opacity-40">
                     <svg class="w-20 h-20 mx-auto text-slate-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                     <p class="font-medium text-slate-400">Optimized result will appear here</p>
@@ -96,7 +117,7 @@
             <div id="result-actions" class="mt-6 hidden">
                 <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700">
                     <div class="flex items-center justify-between mb-2">
-                        <span class="text-[10px] font-bold text-blue-400 uppercase">Direct URL</span>
+                        <span id="server-label" class="text-[10px] font-bold text-blue-400 uppercase">ImageKit URL</span>
                         <span id="copy-msg" class="text-[10px] font-bold text-green-400 hidden">COPIED!</span>
                     </div>
                     <div class="flex gap-2">
@@ -104,16 +125,19 @@
                         <button onclick="copyToClipboard()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 rounded-lg text-xs font-bold transition-colors">Copy</button>
                     </div>
                 </div>
+                <p class="text-[10px] text-slate-500 mt-2 text-center">Images uploaded to third-party servers are subject to their terms.</p>
             </div>
         </div>
     </div>
 
     <script>
         // CONFIG
-        const TARGET_SIZE_KB = 150; // Target ~150KB
-        const PUBLIC_KEY = "public_W8pXprjPHYrYwlWMf811dtUm2Og=";
-        const PRIVATE_KEY = "private_Wu/w/ZEmydjv/FbRgVKOffRxtNY=";
-        const ENDPOINT = "https://ik.imagekit.io/19imy4f1u";
+        const TARGET_SIZE_KB = 150;
+        const IMAGEKIT_PUBLIC = "public_W8pXprjPHYrYwlWMf811dtUm2Og=";
+        const IMAGEKIT_PRIVATE = "private_Wu/w/ZEmydjv/FbRgVKOffRxtNY=";
+        const IMGBB_API_KEY = 'a26bed1b2fd07ba03bff75343d0834fe';
+
+        let currentServer = 'imagekit';
 
         const dropZone = document.getElementById('drop-zone');
         const imgInput = document.getElementById('image-input');
@@ -128,6 +152,28 @@
         const emptyState = document.getElementById('empty-state');
         const resultActions = document.getElementById('result-actions');
         const urlOutput = document.getElementById('url-output');
+        const serverLabel = document.getElementById('server-label');
+
+        // Server Switcher Logic
+        function setServer(server) {
+            currentServer = server;
+            const ikBtn = document.getElementById('btn-imagekit');
+            const bbBtn = document.getElementById('btn-imgbb');
+            
+            if (server === 'imagekit') {
+                ikBtn.classList.add('bg-blue-600', 'text-white');
+                ikBtn.classList.remove('text-slate-400');
+                bbBtn.classList.remove('bg-blue-600', 'text-white');
+                bbBtn.classList.add('text-slate-400');
+                serverLabel.innerText = "ImageKit URL";
+            } else {
+                bbBtn.classList.add('bg-blue-600', 'text-white');
+                bbBtn.classList.remove('text-slate-400');
+                ikBtn.classList.remove('bg-blue-600', 'text-white');
+                ikBtn.classList.add('text-slate-400');
+                serverLabel.innerText = "ImgBB URL";
+            }
+        }
 
         // Paste Event
         window.addEventListener('paste', e => {
@@ -146,30 +192,29 @@
         };
         imgInput.onchange = () => { if(imgInput.files[0]) processPipeline(imgInput.files[0]); };
 
-        // Main Pipeline: Compress -> Upload -> Show
+        // Main Pipeline
         async function processPipeline(file) {
-            // Reset UI
             processingOverlay.classList.remove('hidden');
             processText.innerText = "Optimizing Size...";
             statsContainer.classList.remove('opacity-30');
-            
-            // Show Original Size
             sizeOriginal.innerText = formatBytes(file.size);
 
             try {
-                // 1. Compress Image
+                // 1. Compress
                 const compressedBlob = await compressImage(file);
-                
-                // Show New Size
                 sizeCompressed.innerText = formatBytes(compressedBlob.size);
-                processText.innerText = "Uploading to Cloud...";
+                processText.innerText = `Uploading to ${currentServer === 'imagekit' ? 'ImageKit' : 'ImgBB'}...`;
 
-                // 2. Upload to ImageKit
-                const url = await uploadToImageKit(compressedBlob);
+                // 2. Upload
+                let url;
+                if (currentServer === 'imagekit') {
+                    url = await uploadToImageKit(compressedBlob);
+                } else {
+                    url = await uploadToImgBB(compressedBlob);
+                }
                 
-                // 3. Show Result
+                // 3. Result
                 showResult(url);
-
             } catch (error) {
                 console.error(error);
                 alert("Error: " + error.message);
@@ -178,7 +223,6 @@
             }
         }
 
-        // --- Logic: Browser-side Compression ---
         function compressImage(file) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -188,60 +232,63 @@
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-
-                    // Max Dimension Limit (e.g. 1920px) to help file size
                     const MAX_WIDTH = 1600; 
                     if (width > MAX_WIDTH) {
                         height *= MAX_WIDTH / width;
                         width = MAX_WIDTH;
                     }
-
                     canvas.width = width;
                     canvas.height = height;
-                    
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // Iterative Compression Logic
                     let quality = 0.9;
-                    
                     const tryCompress = () => {
                         canvas.toBlob((blob) => {
                             if (!blob) return reject("Compression error");
-                            
-                            // Check if size is acceptable (<= 150KB) OR quality is too low
-                            if (blob.size <= (TARGET_SIZE_KB * 1024) || quality <= 0.2) {
+                            if (blob.size <= (TARGET_SIZE_KB * 1024) || quality <= 0.1) {
                                 resolve(blob);
                             } else {
-                                // Reduce quality and try again
                                 quality -= 0.1;
                                 tryCompress(); 
                             }
                         }, 'image/jpeg', quality);
                     };
-
                     tryCompress();
                 };
                 img.onerror = reject;
             });
         }
 
-        // --- Logic: Upload ---
         async function uploadToImageKit(blob) {
             const formData = new FormData();
             formData.append('file', blob);
-            formData.append('fileName', `compressed_${Date.now()}.jpg`);
-            formData.append('publicKey', PUBLIC_KEY);
+            formData.append('fileName', `lite_${Date.now()}.jpg`);
+            formData.append('publicKey', IMAGEKIT_PUBLIC);
 
             const res = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
                 method: 'POST',
-                headers: { 'Authorization': 'Basic ' + btoa(PRIVATE_KEY + ':') },
+                headers: { 'Authorization': 'Basic ' + btoa(IMAGEKIT_PRIVATE + ':') },
                 body: formData
             });
 
             const data = await res.json();
-            if (!data.url) throw new Error("Upload Failed");
+            if (!data.url) throw new Error(data.message || "ImageKit Upload Failed");
             return data.url;
+        }
+
+        async function uploadToImgBB(blob) {
+            const formData = new FormData();
+            formData.append('image', blob);
+
+            const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (!data.success) throw new Error(data.error?.message || "ImgBB Upload Failed");
+            return data.data.url;
         }
 
         function showResult(url) {
