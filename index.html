@@ -38,14 +38,6 @@
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.05);
         }
-
-        /* Toggle Switch Styling */
-        .switch-checkbox:checked + .switch-label {
-            background-color: #3b82f6;
-        }
-        .switch-checkbox:checked + .switch-label .switch-dot {
-            transform: translateX(100%);
-        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 text-white">
@@ -58,7 +50,7 @@
                 <div class="flex justify-between items-start mb-6">
                     <div>
                         <h1 class="text-3xl font-bold tracking-tight mb-1">Image<span class="gradient-text">Lite</span></h1>
-                        <p class="text-slate-400 text-xs">Auto-compress to 150KB</p>
+                        <p class="text-slate-400 text-xs">Auto-compress to 150KB (Transparent Friendly)</p>
                     </div>
                     
                     <!-- Server Switcher -->
@@ -82,7 +74,6 @@
                         <p class="text-xs text-slate-500 mt-2">Drag & Drop or CTRL+V</p>
                     </div>
 
-                    <!-- Processing Overlay -->
                     <div id="processing-overlay" class="absolute inset-0 bg-slate-900/90 z-20 flex flex-col items-center justify-center hidden">
                         <span class="loader mb-4"></span>
                         <p id="process-text" class="text-xs font-bold text-blue-400 uppercase tracking-widest text-center px-4">Compressing...</p>
@@ -90,7 +81,6 @@
                 </div>
             </div>
 
-            <!-- Stats -->
             <div id="stats-container" class="mt-6 grid grid-cols-2 gap-4 opacity-30 transition-opacity duration-500">
                 <div class="stat-card p-4 rounded-xl">
                     <p class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Original</p>
@@ -111,7 +101,10 @@
                     <p class="font-medium text-slate-400">Optimized result will appear here</p>
                 </div>
                 
-                <img id="preview-img" class="hidden max-w-full max-h-[350px] object-contain rounded-lg shadow-2xl border border-slate-700">
+                <!-- Checkerboard background for transparency preview -->
+                <div id="preview-container" class="hidden relative rounded-lg overflow-hidden shadow-2xl border border-slate-700 bg-[url('https://www.transparenttextures.com/patterns/checkerboard.png')] bg-repeat">
+                    <img id="preview-img" class="max-w-full max-h-[350px] object-contain">
+                </div>
             </div>
 
             <div id="result-actions" class="mt-6 hidden">
@@ -125,13 +118,11 @@
                         <button onclick="copyToClipboard()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 rounded-lg text-xs font-bold transition-colors">Copy</button>
                     </div>
                 </div>
-                <p class="text-[10px] text-slate-500 mt-2 text-center">Images uploaded to third-party servers are subject to their terms.</p>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIG
         const TARGET_SIZE_KB = 150;
         const IMAGEKIT_PUBLIC = "public_W8pXprjPHYrYwlWMf811dtUm2Og=";
         const IMAGEKIT_PRIVATE = "private_Wu/w/ZEmydjv/FbRgVKOffRxtNY=";
@@ -143,23 +134,20 @@
         const imgInput = document.getElementById('image-input');
         const processingOverlay = document.getElementById('processing-overlay');
         const processText = document.getElementById('process-text');
-        
-        // UI Elements
         const sizeOriginal = document.getElementById('size-original');
         const sizeCompressed = document.getElementById('size-compressed');
         const statsContainer = document.getElementById('stats-container');
         const previewImg = document.getElementById('preview-img');
+        const previewContainer = document.getElementById('preview-container');
         const emptyState = document.getElementById('empty-state');
         const resultActions = document.getElementById('result-actions');
         const urlOutput = document.getElementById('url-output');
         const serverLabel = document.getElementById('server-label');
 
-        // Server Switcher Logic
         function setServer(server) {
             currentServer = server;
             const ikBtn = document.getElementById('btn-imagekit');
             const bbBtn = document.getElementById('btn-imgbb');
-            
             if (server === 'imagekit') {
                 ikBtn.classList.add('bg-blue-600', 'text-white');
                 ikBtn.classList.remove('text-slate-400');
@@ -175,13 +163,11 @@
             }
         }
 
-        // Paste Event
         window.addEventListener('paste', e => {
             const file = e.clipboardData.files[0];
             if (file && file.type.startsWith('image/')) processPipeline(file);
         });
 
-        // Click/Drop Events
         dropZone.onclick = () => imgInput.click();
         dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('border-blue-500'); };
         dropZone.ondragleave = () => dropZone.classList.remove('border-blue-500');
@@ -192,7 +178,6 @@
         };
         imgInput.onchange = () => { if(imgInput.files[0]) processPipeline(imgInput.files[0]); };
 
-        // Main Pipeline
         async function processPipeline(file) {
             processingOverlay.classList.remove('hidden');
             processText.innerText = "Optimizing Size...";
@@ -200,20 +185,21 @@
             sizeOriginal.innerText = formatBytes(file.size);
 
             try {
-                // 1. Compress
-                const compressedBlob = await compressImage(file);
+                // Determine output format based on transparency
+                const isTransparent = file.type === 'image/png' || file.type === 'image/webp';
+                const outputType = isTransparent ? 'image/webp' : 'image/jpeg';
+                
+                const compressedBlob = await compressImage(file, outputType);
                 sizeCompressed.innerText = formatBytes(compressedBlob.size);
                 processText.innerText = `Uploading to ${currentServer === 'imagekit' ? 'ImageKit' : 'ImgBB'}...`;
 
-                // 2. Upload
                 let url;
                 if (currentServer === 'imagekit') {
-                    url = await uploadToImageKit(compressedBlob);
+                    url = await uploadToImageKit(compressedBlob, outputType);
                 } else {
                     url = await uploadToImgBB(compressedBlob);
                 }
                 
-                // 3. Result
                 showResult(url);
             } catch (error) {
                 console.error(error);
@@ -223,7 +209,7 @@
             }
         }
 
-        function compressImage(file) {
+        function compressImage(file, outputType) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.src = URL.createObjectURL(file);
@@ -240,19 +226,23 @@
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
+                    
+                    // Clear canvas to ensure transparency is preserved
+                    ctx.clearRect(0, 0, width, height);
                     ctx.drawImage(img, 0, 0, width, height);
 
                     let quality = 0.9;
                     const tryCompress = () => {
                         canvas.toBlob((blob) => {
                             if (!blob) return reject("Compression error");
+                            // If it's still too big, reduce quality
                             if (blob.size <= (TARGET_SIZE_KB * 1024) || quality <= 0.1) {
                                 resolve(blob);
                             } else {
                                 quality -= 0.1;
                                 tryCompress(); 
                             }
-                        }, 'image/jpeg', quality);
+                        }, outputType, quality);
                     };
                     tryCompress();
                 };
@@ -260,10 +250,11 @@
             });
         }
 
-        async function uploadToImageKit(blob) {
+        async function uploadToImageKit(blob, type) {
+            const extension = type.split('/')[1];
             const formData = new FormData();
             formData.append('file', blob);
-            formData.append('fileName', `lite_${Date.now()}.jpg`);
+            formData.append('fileName', `lite_${Date.now()}.${extension}`);
             formData.append('publicKey', IMAGEKIT_PUBLIC);
 
             const res = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
@@ -280,12 +271,10 @@
         async function uploadToImgBB(blob) {
             const formData = new FormData();
             formData.append('image', blob);
-
             const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
                 method: 'POST',
                 body: formData
             });
-
             const data = await res.json();
             if (!data.success) throw new Error(data.error?.message || "ImgBB Upload Failed");
             return data.data.url;
@@ -294,7 +283,7 @@
         function showResult(url) {
             emptyState.classList.add('hidden');
             previewImg.src = url;
-            previewImg.classList.remove('hidden');
+            previewContainer.classList.remove('hidden');
             resultActions.classList.remove('hidden');
             urlOutput.value = url;
         }
